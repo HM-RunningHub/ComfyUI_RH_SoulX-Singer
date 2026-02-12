@@ -1,0 +1,50 @@
+# Sensitive files
+config.json
+rh_config.json
+.env
+*.pem
+*.key
+sync.sh
+deploy.sh
+cptorh*.sh
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Node.js
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large files / Models
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.pt
+models/
+weights/
+save_audio/
+
+# Logs
+*.log
+*.tmp
+
+# Audio output
+output/
