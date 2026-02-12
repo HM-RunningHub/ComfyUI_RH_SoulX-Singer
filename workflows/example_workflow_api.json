@@ -1,0 +1,112 @@
+{
+  "1": {
+    "inputs": {
+      "control": "melody",
+      "seed": 52230546,
+      "pipeline": [
+        "2",
+        0
+      ],
+      "prompt_wav": [
+        "3",
+        0
+      ],
+      "prompt_metadata": [
+        "4",
+        0
+      ],
+      "target_metadata": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "RunningHub SoulX-Singer SVS Processor",
+    "_meta": {
+      "title": "RunningHub SoulX-Singer SVS Processor"
+    }
+  },
+  "2": {
+    "inputs": {},
+    "class_type": "RunningHub SoulX-Singer SVS Loader",
+    "_meta": {
+      "title": "RunningHub SoulX-Singer SVS Loader"
+    }
+  },
+  "3": {
+    "inputs": {
+      "audio": "prompt_audio.mp3",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "Load Audio"
+    }
+  },
+  "4": {
+    "inputs": {
+      "max_merge_duration": 30000,
+      "language": "Mandarin",
+      "pipeline": [
+        "6",
+        0
+      ],
+      "audio": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "RunningHub SoulX-Singer Preprocessor",
+    "_meta": {
+      "title": "RunningHub SoulX-Singer Preprocessor"
+    }
+  },
+  "5": {
+    "inputs": {
+      "max_merge_duration": 60000,
+      "language": "Cantonese",
+      "pipeline": [
+        "6",
+        0
+      ],
+      "audio": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "RunningHub SoulX-Singer Preprocessor",
+    "_meta": {
+      "title": "RunningHub SoulX-Singer Preprocessor"
+    }
+  },
+  "6": {
+    "inputs": {},
+    "class_type": "RunningHub SoulX-Singer Preprocess Pipeline",
+    "_meta": {
+      "title": "RunningHub SoulX-Singer Preprocess Pipeline"
+    }
+  },
+  "7": {
+    "inputs": {
+      "audio": "target_audio.mp3",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "Load Audio"
+    }
+  },
+  "8": {
+    "inputs": {
+      "filename_prefix": "audio/ComfyUI",
+      "audioUI": "",
+      "audio": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "SaveAudio",
+    "_meta": {
+      "title": "Save Audio (FLAC)"
+    }
+  }
+}
