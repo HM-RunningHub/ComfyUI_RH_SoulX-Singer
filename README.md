@@ -159,6 +159,7 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 - **Paper**: [arXiv:2602.07803](https://arxiv.org/abs/2602.07803)
 - **SVS Model**: [HuggingFace](https://huggingface.co/Soul-AILab/SoulX-Singer)
 - **Preprocess Models**: [HuggingFace](https://huggingface.co/Soul-AILab/SoulX-Singer-Preprocess)
+- **RunningHub**: [www.runninghub.cn](https://www.runninghub.cn)
 
 ## 🙏 Acknowledgements
 
