@@ -17,6 +17,7 @@ A ComfyUI custom node for **[SoulX-Singer](https://github.com/Soul-AILab/SoulX-S
 - **Multi-Language Support** — Mandarin, English, and Cantonese
 - **Full Pipeline** — Includes audio preprocessing (vocal separation, F0 extraction, lyric/note transcription) and SVS inference
 - **Timbre Cloning** — Preserve singer identity across languages and styles
+- **Lyrics Editing (New)** — Replace the lyrics of an existing recording while keeping its melody, note timing, pitch and f0: the original song is transcribed with your known lyrics, then the new lyrics are aligned onto the very same notes
 
 ## 🛠️ Installation
 
@@ -84,12 +85,13 @@ modelscope download --model Soul-AILab/SoulX-Singer-Preprocess --local_dir Comfy
 
 ### Workflow
 
-The typical workflow consists of 4 nodes:
+The typical workflow consists of 5 nodes:
 
 1. **Load Preprocess Pipeline** → Loads the audio preprocessing models
 2. **Preprocess Audio** → Extracts vocal, F0, lyrics, and notes from audio
-3. **Load SVS Model** → Loads the SoulX-Singer synthesis model
-4. **Generate Singing Voice** → Synthesizes singing voice with timbre cloning
+3. **Lyrics Editor** *(optional)* → Replaces the lyrics while keeping melody and timing
+4. **Load SVS Model** → Loads the SoulX-Singer synthesis model
+5. **Generate Singing Voice** → Synthesizes singing voice with timbre cloning
 
 ### Basic Steps
 
@@ -97,6 +99,44 @@ The typical workflow consists of 4 nodes:
 2. Preprocess both audios to extract metadata
 3. Load the SVS model
 4. Generate the singing voice with melody or score control
+
+### Re-singing an existing song with new lyrics (改词不改曲)
+
+`workflows/example_workflow_api.json` demonstrates the full chain:
+
+```
+target audio ─► Preprocessor (reference_lyrics = original lyrics)
+                        │
+                        ▼
+                 Lyrics Editor (new_lyrics = your new words)
+                        │
+                        ▼
+                 SVS Processor ─► Save Audio
+```
+
+1. **`Preprocessor.reference_lyrics`** — paste the *original* lyrics. The ASR is
+   biased toward them (Paraformer hotword + character-level DTW), so the detected
+   text is exactly what was sung. Timing, pitch and f0 still come from the audio.
+   Leave it empty for plain ASR.
+2. **`Lyrics Editor.new_lyrics`** — paste the new lyrics. Notes, durations,
+   pitches and f0 are kept; only the words change. The node also outputs
+   `lyrics preview` and `warnings`.
+3. Feed `audio metadata` straight into **`SVS Processor`**.
+
+**Write the new lyrics to fit the original phrases.** With `preserve_sp` on
+(default) the phrase structure of the recording — the `<SP>` rests — is kept, so
+each phrase has exactly as many slots as it has notes. `lyrics preview` prints the
+resulting split, e.g.:
+
+```
+[0] (14/3/1/4/2) 雾散落银河之间星如指尖般盘旋 / 任由那 / 光 / 定格在这 / 初见
+    总计 24 字 · 5 句 · 24 个音符
+```
+
+If a segment's new lyrics are longer than its notes, `warnings` says so instead
+of silently dropping characters. To change the phrasing itself, disable
+`preserve_sp` (the lyrics are then re-flowed over the notes).
+
 
 ## 📝 Node Reference
 
@@ -118,10 +158,35 @@ Processes audio to extract singing metadata.
 | audio | AUDIO | Input audio |
 | max_merge_duration | INT | Max segment duration in ms (10000–60000, default: 30000) |
 | language | STRING | Language: Mandarin / English / Cantonese |
+| reference_lyrics | STRING *(optional)* | The lyrics that are actually sung. When set, ASR is force-aligned to them (Paraformer hotword + char-level DTW); timing/pitch/f0 still come from the audio. Mandarin/Cantonese only — English falls back to plain ASR |
 
 | Output | Type | Description |
 |--------|------|-------------|
 | audio metadata | SoulXSinger_Audio_Metadata | Extracted singing metadata (JSON) |
+
+### RunningHub SoulX-Singer Lyrics Editor
+
+Replaces the lyrics in a metadata object while keeping the performance.
+
+| Input | Type | Description |
+|-------|------|-------------|
+| metadata | SoulXSinger_Audio_Metadata | Metadata from a Preprocessor |
+| new_lyrics | STRING | New lyrics (any length; newlines are used as phrase hints) |
+| preserve_sp | BOOLEAN | `true` (default) keeps the original `<SP>` phrasing; `false` re-flows the lyrics over the notes |
+| speed | FLOAT | Time-stretch factor applied after alignment (default 1.0 = unchanged) |
+| normalize_digits | BOOLEAN | Convert digits to their spoken form (default `true`) |
+| force_tone4 | BOOLEAN | Force 仄声 on high notes to avoid smeared syllables |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| audio metadata | SoulXSinger_Audio_Metadata | Same notes/durations/pitches/f0, new words |
+| lyrics preview | STRING | How the lyrics were split, e.g. `[0] (14/3/1/4/2) 雾散落… / 任由那 / …` |
+| warnings | STRING | Phrases with more characters than notes, etc. |
+
+The alignment algorithm (sequential mapping + greedy packing, character-level
+G2P and punctuation restoration) is ported from
+[ComfyUI-MIDI-Edit](https://github.com/ahkimkoo/ComfyUI-MIDI-Edit) under the MIT
+license — see `rh_lyrics/NOTICE`.
 
 ### RunningHub SoulX-Singer SVS Loader
 

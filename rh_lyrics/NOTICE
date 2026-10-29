@@ -1,0 +1,43 @@
+"""Unless otherwise noted, the files in this directory are ported from
+**ComfyUI-MIDI-Edit** and remain under the MIT License:
+
+    MIT License
+
+    Copyright (c) 2025 ahkimkoo
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+Ported files:
+    midi_format.py      core/midi_format.py
+    g2p.py              core/g2p.py
+    text_utils.py       core/text_utils.py
+    ct_transformer.py   core/ct_transformer.py
+    align_algorithm.py  core/align_algorithm.py
+    speed.py            core/speed.py
+    force_align.py      core/soulsx_singer.py  (_ForceAlignLyricTranscriber)
+
+New in this package (same license):
+    metadata.py         metadata string <-> Track conversion, lyric distribution,
+                        human-readable alignment preview
+    __init__.py         public surface
+
+Modifications: package-relative imports, ``[SoulX-RH]`` log prefixes,
+``folder_paths.models_dir`` used for NLTK/ONNX model lookup, and adaptation to
+this pack's ``preprocess.tools.lyric_transcription`` module path.
+"""

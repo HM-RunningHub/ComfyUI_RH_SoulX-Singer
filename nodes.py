@@ -16,6 +16,7 @@ from omegaconf import DictConfig
 from .soulxsinger.utils.file_utils import load_config
 from .soulxsinger.models.soulxsinger import SoulXSinger
 from .soulxsinger.utils.data_processor import DataProcessor
+from .rh_lyrics import align_lyrics, clean_metadata, wrap_transcriber
 
 class RunningHub_SoulXSinger_Preprocess_Pipeline:
     @classmethod
@@ -52,6 +53,19 @@ class RunningHub_SoulXSinger_Preprocessor:
                 "max_merge_duration": ("INT", {"default": 30000, 'min': 10000, 'max': 60000}),
                 "language": (["Mandarin", "English", "Cantonese"], {"default": "Mandarin"}),
             },
+            "optional": {
+                # Force alignment: when the original lyrics are known, Paraformer
+                # is biased toward them so the detected text is exactly the
+                # reference (timing/pitch still come from the audio). Leave empty
+                # for plain ASR.
+                "reference_lyrics": ("STRING", {"multiline": True, "default": "", "dynamicPrompts": False}),
+                # Clean up ROSVOT artefacts that would otherwise be sung as
+                # duplicated syllables / an unnatural pause inside a word.
+                "merge_held_notes": ("BOOLEAN", {"default": True,
+                                                 "label_on": "ON", "label_off": "OFF"}),
+                "merge_repeated_chars": ("BOOLEAN", {"default": True,
+                                                     "label_on": "ON", "label_off": "OFF"}),
+            },
         }
     
     RETURN_TYPES = ('SoulXSinger_Audio_Metadata', )
@@ -71,6 +85,17 @@ class RunningHub_SoulXSinger_Preprocessor:
         pipeline = kwargs.get('pipeline', None)
         max_merge_duration = kwargs.get('max_merge_duration', None)
         language = kwargs.get('language', None)
+        reference_lyrics = kwargs.get('reference_lyrics', "") or ""
+        merge_held_notes = kwargs.get('merge_held_notes', True)
+        merge_repeated_chars = kwargs.get('merge_repeated_chars', True)
+
+        # Attach (or detach) the force-alignment wrapper for this call only.
+        # The pipeline object is shared between every Preprocessor node in the
+        # graph, so the wrapper is always re-created from the inner transcriber
+        # — never left over from a previous node's reference lyrics.
+        pipeline.lyric_transcriber = wrap_transcriber(
+            pipeline.lyric_transcriber, reference_lyrics
+        )
 
         audio_path = os.path.join(folder_paths.get_temp_directory(), f"{uuid.uuid4()}.wav")
         self.save_audio(audio, audio_path)
@@ -78,7 +103,60 @@ class RunningHub_SoulXSinger_Preprocessor:
         pipeline.language = language
         pipeline.save_dir = os.path.join(folder_paths.get_temp_directory(), f"{uuid.uuid4()}")
         metadata = pipeline.run(audio_path=audio_path, language=language, max_merge_duration=max_merge_duration)
+        metadata = clean_metadata(
+            metadata,
+            merge_held_notes=merge_held_notes,
+            merge_repeated_chars=merge_repeated_chars,
+            reference_lyrics=reference_lyrics,
+        )
         return (metadata, )
+
+class RunningHub_SoulXSinger_Lyrics_Editor:
+    """Replace lyrics in SoulX-Singer metadata while keeping the performance.
+
+    Feed it the metadata produced by ``Preprocessor`` (ideally transcribed with
+    ``reference_lyrics`` so the segmentation matches the original words), type
+    the new lyrics, and the melody, note durations, note pitches and frame-level
+    f0 of the original recording are preserved — only the words change. The
+    result feeds ``SVS Processor`` directly.
+
+    ``lyrics preview`` shows how the new lyrics were split across the original
+    phrases (``(14/3/1/4/2) 雾散落… / 任由那 / …``), which is the quickest way
+    to spot a line that was written with the wrong number of characters.
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "metadata": ("SoulXSinger_Audio_Metadata", ),
+                "new_lyrics": ("STRING", {"multiline": True, "default": "", "dynamicPrompts": False}),
+            },
+            "optional": {
+                "preserve_sp": ("BOOLEAN", {"default": True,
+                                            "label_on": "keep original phrases", "label_off": "re-flow"}),
+                "speed": ("FLOAT", {"default": 1.0, "min": 0.5, "max": 2.0, "step": 0.01}),
+                "normalize_digits": ("BOOLEAN", {"default": True}),
+                "force_tone4": ("BOOLEAN", {"default": False}),
+            },
+        }
+
+    RETURN_TYPES = ("SoulXSinger_Audio_Metadata", "STRING", "STRING")
+    RETURN_NAMES = ("audio metadata", "lyrics preview", "warnings")
+    FUNCTION = "edit"
+    CATEGORY = "RunningHub/SoulX-Singer"
+
+    def edit(self, metadata, new_lyrics, preserve_sp=True, speed=1.0,
+             normalize_digits=True, force_tone4=False):
+        return align_lyrics(
+            metadata,
+            new_lyrics,
+            preserve_sp=preserve_sp,
+            normalize_digits=normalize_digits,
+            force_tone4=force_tone4,
+            speed=speed,
+        )
+
 
 class RunningHub_SoulXSinger_SVS_Loader:
     @classmethod
@@ -248,6 +326,7 @@ class RunningHub_SoulXSinger_SVS_Processor:
 NODE_CLASS_MAPPINGS = {
     "RunningHub SoulX-Singer Preprocess Pipeline": RunningHub_SoulXSinger_Preprocess_Pipeline,
     "RunningHub SoulX-Singer Preprocessor": RunningHub_SoulXSinger_Preprocessor,
+    "RunningHub SoulX-Singer Lyrics Editor": RunningHub_SoulXSinger_Lyrics_Editor,
     "RunningHub SoulX-Singer SVS Loader": RunningHub_SoulXSinger_SVS_Loader,
     "RunningHub SoulX-Singer SVS Processor": RunningHub_SoulXSinger_SVS_Processor,
 }

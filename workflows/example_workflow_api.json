@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "control": "melody",
+      "control": "score",
       "seed": 52230546,
       "pipeline": [
         "2",
@@ -16,7 +16,7 @@
         0
       ],
       "target_metadata": [
-        "5",
+        "9",
         0
       ]
     },
@@ -39,7 +39,7 @@
     },
     "class_type": "LoadAudio",
     "_meta": {
-      "title": "Load Audio"
+      "title": "Prompt audio (timbre reference, must be singing)"
     }
   },
   "4": {
@@ -53,17 +53,18 @@
       "audio": [
         "3",
         0
-      ]
+      ],
+      "reference_lyrics": ""
     },
     "class_type": "RunningHub SoulX-Singer Preprocessor",
     "_meta": {
-      "title": "RunningHub SoulX-Singer Preprocessor"
+      "title": "Prompt metadata (no reference lyrics)"
     }
   },
   "5": {
     "inputs": {
       "max_merge_duration": 60000,
-      "language": "Cantonese",
+      "language": "Mandarin",
       "pipeline": [
         "6",
         0
@@ -71,11 +72,12 @@
       "audio": [
         "7",
         0
-      ]
+      ],
+      "reference_lyrics": "雨停滞天空之间\n像泪在眼眶盘旋\n这也许是最后一次见面"
     },
     "class_type": "RunningHub SoulX-Singer Preprocessor",
     "_meta": {
-      "title": "RunningHub SoulX-Singer Preprocessor"
+      "title": "Target metadata — fill in the original lyrics"
     }
   },
   "6": {
@@ -92,12 +94,12 @@
     },
     "class_type": "LoadAudio",
     "_meta": {
-      "title": "Load Audio"
+      "title": "Target audio (the song to re-sing)"
     }
   },
   "8": {
     "inputs": {
-      "filename_prefix": "audio/ComfyUI",
+      "filename_prefix": "audio/SoulX-Singer-lyrics-edited",
       "audioUI": "",
       "audio": [
         "1",
@@ -107,6 +109,47 @@
     "class_type": "SaveAudio",
     "_meta": {
       "title": "Save Audio (FLAC)"
+    }
+  },
+  "9": {
+    "inputs": {
+      "metadata": [
+        "5",
+        0
+      ],
+      "new_lyrics": "雾散落银河之间\n星如指尖般盘旋\n任由时光定格这初见",
+      "preserve_sp": true,
+      "speed": 1.0,
+      "normalize_digits": true,
+      "force_tone4": false
+    },
+    "class_type": "RunningHub SoulX-Singer Lyrics Editor",
+    "_meta": {
+      "title": "Lyrics Editor — new lyrics replace the original ones"
+    }
+  },
+  "10": {
+    "inputs": {
+      "source": [
+        "9",
+        1
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Lyrics preview (how the new lyrics were split)"
+    }
+  },
+  "11": {
+    "inputs": {
+      "source": [
+        "9",
+        2
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Alignment warnings"
     }
   }
 }
